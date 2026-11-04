@@ -1,0 +1,78 @@
+[
+  {
+    "scenario": "fake",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "fake_dual",
+    "passed": true,
+    "joints": 14,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "single",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "joint1_motion_rad": 0.010849113605983882,
+    "gripper_move": true,
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "dual",
+    "passed": true,
+    "joints": 14,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "controllets": [
+      {
+        "name": "dual_cartesian_impedance_controller",
+        "resources": [
+          "mj_left&mj_right"
+        ]
+      }
+    ],
+    "joint_controllets_motion_rad": {
+      "mj_left": 0.01403832467811206,
+      "mj_right": -0.010667349797812293
+    },
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "moveit",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active",
+      "panda_arm_controller": "active"
+    },
+    "target_joint": "panda_joint1",
+    "trajectory_points": 16,
+    "joint1_target_error_rad": 0.0009435480243482411,
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "moveit_dual",
+    "passed": true,
+    "joints": 14,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active",
+      "dual_panda_arm_controller": "active"
+    },
+    "target_joint": "mj_left_joint1",
+    "trajectory_points": 16,
+    "joint1_target_error_rad": 0.000696388619196596,
+    "shutdown_clean": true
+  }
+]

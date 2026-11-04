@@ -82,10 +82,10 @@ def generate_launch_description():
     )
     
     # Joint state publisher setup
-    jsp_source_list = [concatenate_ns(ns, 'joint_states', True)]
+    jsp_source_list = [concatenate_ns(ns, 'joint_state_broadcaster/joint_states', True)]
     if(load_gripper):
-        jsp_source_list.append(concatenate_ns(ns, 'left_gripper_sim_node/joint_states/joint_states', True))
-        jsp_source_list.append(concatenate_ns(ns, 'right_gripper_sim_node/joint_states/joint_states', True))
+        jsp_source_list.append(concatenate_ns(ns, 'left_gripper_sim_node/joint_states', True))
+        jsp_source_list.append(concatenate_ns(ns, 'right_gripper_sim_node/joint_states', True))
 
     node_joint_state_publisher = Node( # RVIZ dependency
             package='joint_state_publisher',
@@ -93,7 +93,7 @@ def generate_launch_description():
             name='joint_state_publisher',
             namespace= ns,
             parameters=[
-                {'source_list': jsp_source_list,
+                {'use_sim_time': True, 'source_list': jsp_source_list,
                  'rate': 30}],
     )
 
@@ -135,7 +135,7 @@ def generate_launch_description():
         Node( # RVIZ dependency
             package='controller_manager',
             executable='spawner',
-            arguments=['joint_state_broadcaster', '-c', concatenate_ns(ns, 'controller_manager', True)],
+            arguments=['joint_state_broadcaster', '-c', concatenate_ns(ns, 'controller_manager', True), '--param-file', mjros_config_file],
             output='screen',
         ),
         Node(package='rviz2',

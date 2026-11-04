@@ -132,3 +132,7 @@ right_joint_impedance_example_controller:
       - 1.0
       - 1.0
       - 0.5
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true

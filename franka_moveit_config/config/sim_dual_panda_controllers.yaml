@@ -1,7 +1,7 @@
 controller_names:
   - dual_panda_arm_controller
-  - panda_gripper_1
-  - panda_gripper_2
+  - mj_left_gripper_sim_node
+  - mj_right_gripper_sim_node
 
 dual_panda_arm_controller:
   action_ns: follow_joint_trajectory
@@ -23,16 +23,16 @@ dual_panda_arm_controller:
     - mj_right_joint6
     - mj_right_joint7
 
-panda_gripper_1:
-    action_ns: gripper_1_action
+mj_left_gripper_sim_node:
+    action_ns: gripper_action
     type: GripperCommand
     default: true
     joints:
       - mj_left_finger_joint1
       - mj_left_finger_joint2
 
-panda_gripper_2:
-    action_ns: gripper_2_action
+mj_right_gripper_sim_node:
+    action_ns: gripper_action
     type: GripperCommand
     default: true
     joints:

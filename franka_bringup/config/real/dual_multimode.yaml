@@ -62,3 +62,7 @@ real_multi_mode_controller:
         names: ["dual_cartesian_impedance_controller"]
         resources:
             dual_cartesian_impedance_controller: ["rl_left&rl_right"]
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true

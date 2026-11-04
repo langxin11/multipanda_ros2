@@ -1,0 +1,78 @@
+[
+  {
+    "scenario": "fake",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "shutdown_clean": true
+  },
+  {
+    "scenario": "fake_dual",
+    "passed": true,
+    "joints": 14,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "shutdown_clean": false,
+    "shutdown_exit_codes": [
+      "1"
+    ]
+  },
+  {
+    "scenario": "single",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active",
+      "cartesian_impedance_controller": "active"
+    },
+    "joint1_motion_rad": 0.010206872424047473,
+    "gripper_move": true,
+    "shutdown_clean": false,
+    "shutdown_exit_codes": [
+      "1",
+      "1"
+    ]
+  },
+  {
+    "scenario": "dual",
+    "passed": true,
+    "joints": 14,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "controllets": [
+      {
+        "name": "dual_cartesian_impedance_controller",
+        "resources": [
+          "mj_left&mj_right"
+        ]
+      }
+    ],
+    "joint_controllets_motion_rad": {
+      "mj_left": 0.01769898464003834,
+      "mj_right": -0.009781295780086765
+    },
+    "shutdown_clean": false,
+    "shutdown_exit_codes": [
+      "1"
+    ]
+  },
+  {
+    "scenario": "moveit",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active",
+      "panda_arm_controller": "active"
+    },
+    "trajectory_points": 16,
+    "joint1_target_error_rad": 0.0004341241068893664,
+    "shutdown_clean": false,
+    "shutdown_exit_codes": [
+      "1"
+    ]
+  }
+]

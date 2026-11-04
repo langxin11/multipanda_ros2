@@ -45,7 +45,7 @@ In addition, you need to make sure that the names of the robot joints and actuat
 ### Structure of the launch files
 The different parameters and the way `ros2_control` is loaded are the only major differences between the real and sim launch files. The rest of the code is structured very similarly. Any controller or code that you write for the real robot should work on the sim robot without requiring any additional changes, and vice-versa.
 
-In the real robot, `ros2_control` is started by its own dedicated node, the `franka_control2`. For simulated robot, this is handled by `mujoco_ros_pkg`'s MuJoCo server.
+On Jazzy, real-robot launch files use the distribution controller manager; the `franka_control2_node` compatibility entry point forwards to `controller_manager/ros2_control_node`. For simulated robot, this is handled by `mujoco_ros_pkg`'s MuJoCo server.
 
 Nodes are launched via the `Node` class in the long `return LaunchDescription` section. The essential nodes that should be launched for all new launch files (specified via the `executable` argument) are:
 - `robot_state_publisher` -- this publishes transform data and RVIZ visualization parameters.
@@ -56,7 +56,7 @@ You can also choose to launch the framework with some default `ros2_control` con
 Node(
     package='controller_manager',
     executable='spawner',
-    arguments=['joint_state_broadcaster'],
+    arguments=['joint_state_broadcaster', '--param-file', mjros_config_file],
     output='screen',
 )
 ```

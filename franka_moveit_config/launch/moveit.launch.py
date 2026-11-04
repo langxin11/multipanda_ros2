@@ -17,10 +17,10 @@
 
 import os
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import (DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription,
-                            Shutdown)
+                            Shutdown, OpaqueFunction)
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import Command, FindExecutable, LaunchConfiguration, PathJoinSubstitution
@@ -41,6 +41,18 @@ def load_yaml(package_name, file_path):
 
 
 def generate_launch_description():
+    return LaunchDescription([
+        DeclareLaunchArgument('load_gripper', default_value='false'),
+        DeclareLaunchArgument('arm_controller_active', default_value='false',
+                              description='Activate real trajectory control at startup'),
+        DeclareLaunchArgument('set_default_robot_parameters', default_value='false',
+                              description='Overwrite robot impedance and collision parameters'),
+        DeclareLaunchArgument('use_rviz', default_value='true'),
+        OpaqueFunction(function=launch_setup),
+    ])
+
+
+def launch_setup(context):
     robot_ip_parameter_name = 'robot_ip'
     use_fake_hardware_parameter_name = 'use_fake_hardware'
     load_gripper_parameter_name = 'load_gripper'
@@ -64,7 +76,8 @@ def generate_launch_description():
     robot_description_config = Command(
         [FindExecutable(name='xacro'), ' ', franka_xacro_file, ' hand:=', load_gripper,
          ' robot_ip:=', robot_ip, ' use_fake_hardware:=', use_fake_hardware,
-         ' fake_sensor_commands:=', fake_sensor_commands])
+         ' fake_sensor_commands:=', fake_sensor_commands,
+         ' set_default_robot_parameters:=', LaunchConfiguration('set_default_robot_parameters')])
 
     robot_description = {'robot_description': robot_description_config}
 
@@ -82,28 +95,41 @@ def generate_launch_description():
         'franka_moveit_config', 'config/kinematics.yaml'
     )
 
+    joint_limits = load_yaml('franka_moveit_config', 'config/joint_limits.yaml')
+    joint_limits['default_velocity_scaling_factor'] = 0.05
+    joint_limits['default_acceleration_scaling_factor'] = 0.05
+
     # Planning Functionality
     ompl_planning_pipeline_config = {
-        'move_group': {
-            'planning_plugin': 'ompl_interface/OMPLPlanner',
-            'request_adapters': 'default_planner_request_adapters/AddTimeOptimalParameterization '
-                                'default_planner_request_adapters/ResolveConstraintFrames '
-                                'default_planner_request_adapters/FixWorkspaceBounds '
-                                'default_planner_request_adapters/FixStartStateBounds '
-                                'default_planner_request_adapters/FixStartStateCollision '
-                                'default_planner_request_adapters/FixStartStatePathConstraints',
-            'start_state_max_bounds_error': 0.1,
-        }
+        'planning_pipelines': ['ompl'],
+        'default_planning_pipeline': 'ompl',
+        'ompl': {
+            'planning_plugins': ['ompl_interface/OMPLPlanner'],
+            'request_adapters': [
+                'default_planning_request_adapters/ResolveConstraintFrames',
+                'default_planning_request_adapters/ValidateWorkspaceBounds',
+                'default_planning_request_adapters/CheckStartStateBounds',
+                'default_planning_request_adapters/CheckStartStateCollision',
+            ],
+            'response_adapters': [
+                'default_planning_response_adapters/AddTimeOptimalParameterization',
+                'default_planning_response_adapters/ValidateSolution',
+                'default_planning_response_adapters/DisplayMotionPath',
+            ],
+        },
     }
     ompl_planning_yaml = load_yaml(
         'franka_moveit_config', 'config/ompl_planning.yaml'
     )
-    ompl_planning_pipeline_config['move_group'].update(ompl_planning_yaml)
+    ompl_planning_pipeline_config['ompl'].update(ompl_planning_yaml)
 
     # Trajectory Execution Functionality
     moveit_simple_controllers_yaml = load_yaml(
         'franka_moveit_config', 'config/panda_controllers.yaml'
     )
+    if load_gripper.perform(context).lower() not in ('true', '1'):
+        moveit_simple_controllers_yaml['controller_names'].remove('panda_gripper')
+        moveit_simple_controllers_yaml.pop('panda_gripper', None)
     moveit_controllers = {
         'moveit_simple_controller_manager': moveit_simple_controllers_yaml,
         'moveit_controller_manager': 'moveit_simple_controller_manager'
@@ -126,13 +152,20 @@ def generate_launch_description():
 
     # Start the actual move_group node/action server
     run_move_group_node = Node(
+        # Keep plugin code mapped while Jazzy destroys controller callback groups.
+        additional_env={'LD_PRELOAD': ':'.join(filter(None, [
+            os.path.join(get_package_prefix('moveit_simple_controller_manager'),
+                         'lib', 'libmoveit_simple_controller_manager.so'),
+            os.environ.get('LD_PRELOAD', ''),
+        ]))},
         package='moveit_ros_move_group',
         executable='move_group',
         output='screen',
         parameters=[
             robot_description,
             robot_description_semantic,
-            kinematics_yaml,
+            {'robot_description_kinematics': kinematics_yaml},
+            {'robot_description_planning': joint_limits},
             ompl_planning_pipeline_config,
             trajectory_execution,
             moveit_controllers,
@@ -142,9 +175,10 @@ def generate_launch_description():
 
     # RViz
     rviz_base = os.path.join(get_package_share_directory('franka_moveit_config'), 'rviz')
-    rviz_full_config = os.path.join(rviz_base, 'moveit.rviz')
+    rviz_full_config = os.path.join(rviz_base, 'real_moveit.rviz')
 
     rviz_node = Node(
+        condition=IfCondition(LaunchConfiguration('use_rviz', default='true')),
         package='rviz2',
         executable='rviz2',
         name='rviz2',
@@ -154,7 +188,8 @@ def generate_launch_description():
             robot_description,
             robot_description_semantic,
             ompl_planning_pipeline_config,
-            kinematics_yaml,
+            {'robot_description_kinematics': kinematics_yaml},
+            {'robot_description_planning': joint_limits},
         ],
     )
 
@@ -175,7 +210,7 @@ def generate_launch_description():
     ros2_control_node = Node(
         package='controller_manager',
         executable='ros2_control_node',
-        parameters=[robot_description, ros2_controllers_path],
+        parameters=[ros2_controllers_path],
         remappings=[('joint_states', 'franka/joint_states')],
         output={
             'stdout': 'screen',
@@ -187,10 +222,15 @@ def generate_launch_description():
     # Load controllers
     load_controllers = []
     for controller in ['panda_arm_controller', 'joint_state_broadcaster']:
+        arguments = [controller, '--param-file', ros2_controllers_path]
+        if controller == 'panda_arm_controller' and \
+                LaunchConfiguration('arm_controller_active').perform(context).lower() not in ('true', '1'):
+            arguments.append('--inactive')
         load_controllers += [
-            ExecuteProcess(
-                cmd=['ros2 run controller_manager spawner {}'.format(controller)],
-                shell=True,
+            Node(
+                package='controller_manager',
+                executable='spawner',
+                arguments=arguments,
                 output='screen',
             )
         ]
@@ -214,7 +254,7 @@ def generate_launch_description():
         executable='joint_state_publisher',
         name='joint_state_publisher',
         parameters=[
-            {'source_list': ['franka/joint_states', 'panda_gripper/joint_states'], 'rate': 30}],
+            {'source_list': ['joint_state_broadcaster/joint_states', 'panda_gripper/joint_states'], 'rate': 30}],
     )
     robot_arg = DeclareLaunchArgument(
         robot_ip_parameter_name,
@@ -242,7 +282,7 @@ def generate_launch_description():
                           use_fake_hardware_parameter_name: use_fake_hardware}.items(),
         condition=IfCondition(load_gripper)
     )
-    return LaunchDescription(
+    return (
         [robot_arg,
          use_fake_hardware_arg,
          fake_sensor_commands_arg,

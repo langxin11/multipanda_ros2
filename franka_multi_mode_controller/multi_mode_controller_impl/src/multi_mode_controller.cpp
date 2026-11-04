@@ -81,16 +81,14 @@ controller_interface::return_type MultiModeController::update(
 }
 
 CallbackReturn MultiModeController::on_init() {
-  // declare all the shit
-  // doesn't do jack shit
-  // try{
-  //   auto_declare<int>("arm_count", 1);
-  //   auto_declare<std::vector<std::string>>("controllers", {});
-  // } 
-  // catch (const std::exception& e) {
-  //   fprintf(stderr, "Exception thrown during init stage with message: %s \n", e.what());
-  //   return CallbackReturn::ERROR;
-  // }
+  // Jazzy no longer declares YAML overrides implicitly. The set of controllet
+  // parameters depends on the selected controllers and resources.
+  for (const auto & [name, value] :
+       get_node()->get_node_parameters_interface()->get_parameter_overrides()) {
+    if (!get_node()->has_parameter(name)) {
+      get_node()->declare_parameter(name, value);
+    }
+  }
 
   try {
     rclcpp::Parameter arm_count;

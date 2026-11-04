@@ -1,154 +1,43 @@
 #!/usr/bin/env bash
-
-# *********************************************************
-# One-click installer for development with multipanda_ros2
-#   Developed by: Jon Skerlj
-#   Last update: 04.02.2026
-#   Tested using Ubuntu 22.04
-# *********************************************************
-
-# Exit script on error
-set -e
-
-# *********************************************************
-# Settings and Help
-# *********************************************************
-DOCKER_CLEAN=false
-GIT_CLEAN=false
+set -euo pipefail
+REPO_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+IMAGE_TAG=${MULTIPANDA_IMAGE:-multipanda-jazzy:dev}
 DRY_RUN=false
 DOCKER_ARGS=()
-
-show_help() {
-    echo "Usage: .tools/setup [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  --git-clean   Remove all ignored files via 'git clean -fdX'"
-    echo "  --clean       Prune Docker system before building"
-    echo "  --dry-run     Show commands without executing them"
-    echo "  --build-arg   Pass build arguments to Docker"
-    echo "  --help        Show this help message"
-}
-
+BUILD_NETWORK=${MULTIPANDA_BUILD_NETWORK:-default}
+for PROXY_NAME in http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy NO_PROXY; do
+    if [[ -n ${!PROXY_NAME:-} ]]; then
+        DOCKER_ARGS+=(--build-arg "$PROXY_NAME")
+        case "${!PROXY_NAME}" in
+            *://127.0.0.1:*|*://localhost:*)
+                BUILD_NETWORK=${MULTIPANDA_BUILD_NETWORK:-host} ;;
+        esac
+    fi
+done
 while [[ $# -gt 0 ]]; do
-    case $1 in
-        --git-clean) GIT_CLEAN=true; shift ;;
-        --clean) DOCKER_CLEAN=true; shift ;;
+    case "$1" in
+        --help|-h)
+            echo "用法：./tools/setup_env [--dry-run] [--build-arg 名称=值]"
+            echo "准备 MuJoCo 子模块，并构建 Ubuntu 24.04 / ROS 2 Jazzy 开发镜像。"
+            echo "例如：./tools/setup_env --build-arg BUILD_JOBS=4"
+            echo "可通过 MULTIPANDA_IMAGE 设置镜像名（默认 multipanda-jazzy:dev）。"
+            exit 0 ;;
         --dry-run) DRY_RUN=true; shift ;;
-        --build-arg) DOCKER_ARGS+=(--build-arg "$2"); shift 2 ;;
-        --help) show_help; exit 0 ;;
-        *) echo "Unknown option: $1"; show_help; exit 1 ;;
+        --build-arg)
+            [[ $# -ge 2 ]] || { echo "--build-arg 缺少参数" >&2; exit 2; }
+            DOCKER_ARGS+=(--build-arg "$2"); shift 2 ;;
+        *) echo "未知选项：$1；请使用 --help。" >&2; exit 2 ;;
     esac
 done
-
-# *********************************************************
-# Path and User Identity Detection (Dynamic UID/GID)
-# *********************************************************
-REPO_PATH="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-REPO_NAME="$(basename "$REPO_PATH")"
-cd "$REPO_PATH"
-
-# Detect current user info for permission mapping
-USER_UID=$(id -u)
-USER_GID=$(id -g)
-DOCKER_ARGS+=(--build-arg USER_UID="$USER_UID" --build-arg USER_GID="$USER_GID")
-
-# Detect Architecture
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  TAG_ARCH="amd64" ;;
-    aarch64) TAG_ARCH="arm64" ;;
-    *)       TAG_ARCH="$ARCH" ;;
-esac
-
-run_cmd() {
-    if $DRY_RUN; then
-        echo "[DRY-RUN] Executing: $*"
-    else
-        "$@"
-    fi
-}
-
-highlight_echo() {
-    printf "==> ✓ %s\n\n" "$1"
-}
-
-echo "Setting up environment for $REPO_NAME ($TAG_ARCH)"
-
-# *********************************************************
-# Tool Installation (Git, Python3, Pip3)
-# *********************************************************
-
-# Git
-if ! command -v git >/dev/null; then
-    echo "Installing git..."
-    run_cmd sudo apt update && run_cmd sudo apt install -y git
+if $DRY_RUN; then
+    printf '将准备子模块，并构建镜像：%s\n' "$IMAGE_TAG"
+    exit 0
 fi
-
-# Python3
-if ! command -v python3 >/dev/null; then
-    echo "Installing python3..."
-    run_cmd sudo apt update && run_cmd sudo apt install -y python3
-fi
-
-# Pip3
-if ! command -v pip3 >/dev/null; then
-    echo "Installing python3-pip..."
-    run_cmd sudo apt update && run_cmd sudo apt install -y python3-pip
-fi
-
-highlight_echo "Core tools (git, python3, pip3) are installed"
-
-# *********************************************************
-# Git Cleanup (Optional)
-# *********************************************************
-if [ "$GIT_CLEAN" = true ]; then
-    echo "Performing requested git cleanup..."
-    run_cmd git clean -fdX || run_cmd sudo git clean -fdX
-    run_cmd git remote prune origin
-    highlight_echo "Git environment cleaned"
-fi
-
-# *********************************************************
-# Docker Installation & Daemon Check
-# *********************************************************
-if ! command -v docker >/dev/null; then
-    echo "Installing Docker..."
-    run_cmd sudo apt update && run_cmd sudo apt install -y docker.io
-    run_cmd sudo usermod -aG docker "$USER"
-    echo "NOTICE: Docker installed. A logout may be required for group changes."
-fi
-
-# Daemon Check
-if ! $DRY_RUN; then
-    if ! docker info >/dev/null 2>&1; then
-        echo "Docker daemon not running. Starting..."
-        sudo systemctl start docker
-        sleep 2
-    fi
-fi
-highlight_echo "Docker is ready"
-
-# *********************************************************
-# Build Process
-# *********************************************************
-DOCKERFILE="$REPO_PATH/tools/Dockerfile"
-if [ ! -f "$DOCKERFILE" ]; then
-    echo "Error: Dockerfile missing at $DOCKERFILE"
-    exit 1
-fi
-
-if $DOCKER_CLEAN; then
-    echo "Cleaning Docker system..."
-    run_cmd docker system prune --force
-fi
-
-IMAGE_TAG="build-env:${REPO_NAME}-${TAG_ARCH}"
-echo "Building image: $IMAGE_TAG"
-
-run_cmd docker build \
-    -t "$IMAGE_TAG" \
-    "${DOCKER_ARGS[@]}" \
-    -f "$DOCKERFILE" \
-    "$(dirname "$DOCKERFILE")"
-
-echo "★ $REPO_NAME image is ready! ★"
+command -v docker >/dev/null || { echo "请先安装 Docker Engine。" >&2; exit 1; }
+docker info >/dev/null 2>&1 || { echo "无法连接 Docker。请检查服务和当前用户权限。" >&2; exit 1; }
+"$REPO_PATH/tools/prepare_jazzy"
+echo "开始构建 Jazzy 镜像；首次构建需要下载依赖。"
+docker build --network "$BUILD_NETWORK" --progress=plain -t "$IMAGE_TAG" \
+    --build-arg USER_UID="$(id -u)" --build-arg USER_GID="$(id -g)" \
+    "${DOCKER_ARGS[@]}" -f "$REPO_PATH/tools/Dockerfile" "$REPO_PATH/tools"
+echo "镜像已准备好。运行 ./run 进入环境，随后运行 ./src/tools/build_jazzy。"

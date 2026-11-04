@@ -98,6 +98,7 @@ add_library(franka_mj_hardware
   )
 
 target_compile_features(franka_mj_hardware PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_options(franka_mj_hardware PRIVATE "-Wl,--no-undefined")
 target_include_directories(franka_mj_hardware PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>

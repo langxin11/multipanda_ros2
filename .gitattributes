@@ -1,0 +1,2 @@
+# Unified patches preserve upstream context, including whitespace-only lines.
+tools/patches/*.patch -whitespace

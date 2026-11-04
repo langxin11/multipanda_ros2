@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -eo pipefail
+REPO_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+if [[ ! -f /opt/ros/jazzy/setup.bash ]]; then
+    echo "未找到 ROS 2 Jazzy。请先运行 ./tools/setup_env 和 ./run。" >&2
+    exit 1
+fi
+source /opt/ros/jazzy/setup.bash
+if [[ -n ${MULTIPANDA_WS:-} ]]; then
+    WS_PATH=$MULTIPANDA_WS
+elif [[ $(basename "$REPO_PATH") == src ]]; then
+    WS_PATH=$(dirname "$REPO_PATH")
+else
+    WS_PATH=${MULTIPANDA_WS:-"$REPO_PATH/.jazzy_ws"}
+fi
+mkdir -p "$WS_PATH"
+if [[ "$WS_PATH" == "$REPO_PATH/"* ]]; then touch "$WS_PATH/COLCON_IGNORE"; fi
+cd "$WS_PATH"
+export CMAKE_BUILD_PARALLEL_LEVEL=${CMAKE_BUILD_PARALLEL_LEVEL:-4}
+echo "开始构建 Jazzy 工作区：$WS_PATH"
+colcon build --base-paths "$REPO_PATH" --executor sequential \
+    --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_TESTING=ON "$@"
+echo "构建完成。请执行：source $WS_PATH/install/setup.bash"

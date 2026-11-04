@@ -4,6 +4,8 @@
 
 namespace franka_hardware{ 
 
+RobotSim::~RobotSim() = default;
+
 bool RobotSim::populateIndices(){
   const mjModel* m_ = franka_hardware_model_->getMjModel();
   // body index loop

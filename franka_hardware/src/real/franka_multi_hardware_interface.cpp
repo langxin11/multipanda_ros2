@@ -112,7 +112,10 @@ CallbackReturn FrankaMultiHardwareInterface::on_init(const hardware_interface::H
     }
     try {
       RCLCPP_INFO(getLogger(), "Connecting to robot at \"%s\" ...", arm.robot_ip_.c_str());
-      arm.robot_ = std::make_unique<Robot>(arm.robot_ip_, getLogger());
+      const auto parameter = info_.hardware_parameters.find("set_default_robot_parameters");
+      const bool set_defaults = parameter == info_.hardware_parameters.end() ||
+                                parameter->second == "true";
+      arm.robot_ = std::make_unique<Robot>(arm.robot_ip_, getLogger(), set_defaults);
     } catch (const franka::Exception& e) {
       RCLCPP_FATAL(getLogger(), "Could ! connect to robot");
       RCLCPP_FATAL(getLogger(), "%s", e.what());

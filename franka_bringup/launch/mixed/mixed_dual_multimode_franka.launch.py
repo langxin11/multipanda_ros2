@@ -117,7 +117,7 @@ def generate_launch_description():
         Node(
             package='controller_manager',
             executable='ros2_control_node',
-            parameters=[{'robot_description': robot_description}, franka_controllers],
+            parameters=[franka_controllers],
             remappings=[('joint_states', 'franka/joint_states')],
             output={
                 'stdout': 'screen',
@@ -138,13 +138,13 @@ def generate_launch_description():
             executable='joint_state_publisher',
             name='joint_state_publisher',
             parameters=[
-                {'source_list': ['franka/joint_states', 'panda_gripper/joint_states'],
+                {'source_list': ['joint_state_broadcaster/joint_states', 'panda_gripper/joint_states'],
                  'rate': 30}],
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['joint_state_broadcaster'],
+            arguments=['joint_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         # Node(

@@ -35,3 +35,7 @@ multi_mode_controller:
         names: ["panda_joint_impedance_controller"]
         resources:
             panda_joint_impedance_controller: ["panda"]
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true

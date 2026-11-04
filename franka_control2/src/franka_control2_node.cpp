@@ -12,88 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <algorithm>
-#include <chrono>
-#include <memory>
-#include <string>
-#include <thread>
-#include <atomic>
+// Keep the existing executable name while using Jazzy's maintained control loop.
+// execv preserves ROS arguments, signals and the child process exit status.
+#include <ament_index_cpp/get_package_prefix.hpp>
+#include <cerrno>
+#include <cstring>
+#include <iostream>
+#include <unistd.h>
 
-#include "controller_manager/controller_manager.hpp"
-#include "rclcpp/rclcpp.hpp"
-#include "realtime_tools/thread_priority.hpp"
-
-#include "franka/exception.h"
-
-using namespace std::chrono_literals;
-
-namespace
+int main(int, char ** argv)
 {
-// Reference: https://man7.org/linux/man-pages/man2/sched_setparam.2.html
-// This value is used when configuring the main loop to use SCHED_FIFO scheduling
-// We use a midpoint RT priority to allow maximum flexibility to users
-int const kSchedPriority = 50;
-
-}  // namespace
-
-int main(int argc, char ** argv)
-{
-  rclcpp::init(argc, argv);
-
-  std::shared_ptr<rclcpp::Executor> executor =
-    std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-  std::string manager_node_name = "controller_manager";
-
-  std::atomic_bool has_error(false);
-  auto cm = std::make_shared<controller_manager::ControllerManager>(executor, manager_node_name);
-  RCLCPP_INFO(cm->get_logger(), "franka_control2_node");  
-  RCLCPP_INFO(cm->get_logger(), "update rate is %d Hz", cm->get_update_rate());
-
-  std::thread cm_thread(
-    [cm, &has_error]()
-    {
-      if (realtime_tools::has_realtime_kernel())
-      {
-        if (!realtime_tools::configure_sched_fifo(kSchedPriority))
-        {
-          RCLCPP_WARN(cm->get_logger(), "Could not enable FIFO RT scheduling policy");
-        }
-      }
-      else
-      {
-        RCLCPP_INFO(cm->get_logger(), "RT kernel is recommended for better performance");
-      }
-
-      // for calculating sleep time
-      auto const period = std::chrono::nanoseconds(1'000'000'000 / cm->get_update_rate());
-      auto const cm_now = std::chrono::nanoseconds(cm->now().nanoseconds());
-      std::chrono::time_point<std::chrono::system_clock, std::chrono::nanoseconds>
-        next_iteration_time{cm_now};
-
-      // for calculating the measured period of the loop
-      rclcpp::Time previous_time = cm->now();
-
-      while (rclcpp::ok())
-      {
-        // calculate measured period
-        auto const current_time = cm->now();
-        auto const measured_period = current_time - previous_time;
-        previous_time = current_time;
-        
-        // execute update loop
-        cm->read(cm->now(), measured_period);
-        cm->update(cm->now(), measured_period);
-        cm->write(cm->now(), measured_period);
-        // wait until we hit the end of the period
-
-        next_iteration_time += period;
-        std::this_thread::sleep_until(next_iteration_time);
-      }
-    });
-
-  executor->add_node(cm);
-  executor->spin();
-  cm_thread.join();
-  rclcpp::shutdown();
-  return 0;
+  const auto executable = ament_index_cpp::get_package_prefix("controller_manager") +
+    "/lib/controller_manager/ros2_control_node";
+  execv(executable.c_str(), argv);
+  std::cerr << "无法启动 Jazzy controller_manager: " << std::strerror(errno) << std::endl;
+  return 127;
 }

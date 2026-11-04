@@ -4,6 +4,7 @@ from geometry_msgs.msg import PoseStamped, Point, Quaternion
 
 import rclpy
 from rclpy.node import Node
+from rclpy.executors import ExternalShutdownException
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -79,10 +80,16 @@ def main():
     node = FrankaPublisher()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
+    except RuntimeError:
+        # A subscription can be interrupted after the ROS context shuts down.
+        if rclpy.ok():
+            raise
 
-    rclpy.shutdown()
+    node.destroy_node()
+    rclpy.try_shutdown()
 
 
-main()
+if __name__ == "__main__":
+    main()

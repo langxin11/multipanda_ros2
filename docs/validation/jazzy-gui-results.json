@@ -1,0 +1,17 @@
+[
+  {
+    "scenario": "single",
+    "passed": true,
+    "joints": 7,
+    "initial_controllers": {
+      "joint_state_broadcaster": "active"
+    },
+    "joint1_motion_rad": 0.01083413648434323,
+    "gripper_move": true,
+    "shutdown_clean": false,
+    "shutdown_exit_codes": [
+      "1",
+      "1"
+    ]
+  }
+]

@@ -223,8 +223,8 @@ class ModelSim : public virtual ModelBase{  // NOLINT(cppcoreguidelines-pro-type
         jacRes[i*7 + j] = jacr[(i-3)*model_->nv + joint_qvel_indices_[j]];
       }
     }
-    delete jacp;
-    delete jacr;
+    delete[] jacp;
+    delete[] jacr;
   }
 
  private:
@@ -515,7 +515,7 @@ class ModelSim : public virtual ModelBase{  // NOLINT(cppcoreguidelines-pro-type
         m_i++;
       }
     }
-    delete M;
+    delete[] M;
     return result;
   }
 

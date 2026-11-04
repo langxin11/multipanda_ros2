@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# 为固定版本的 MuJoCo 子模块应用可重复的 Jazzy 补丁。
+set -euo pipefail
+REPO_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+SUBMODULE="$REPO_PATH/mujoco_ros_pkgs"
+PATCH="$REPO_PATH/tools/patches/mujoco_ros_pkgs-jazzy.patch"
+EXPECTED_REV=b3a65f389f8fb47aba6f3479028138242d877867
+if [[ ! -f "$SUBMODULE/.git" && ! -d "$SUBMODULE/.git" ]]; then
+    git -C "$REPO_PATH" submodule update --init --recursive
+fi
+if [[ $(git -C "$SUBMODULE" rev-parse HEAD) != "$EXPECTED_REV" ]]; then
+    echo "错误：MuJoCo 子模块版本与 Jazzy 补丁不匹配。请先保留自己的修改，再切换到 $EXPECTED_REV。" >&2
+    exit 1
+fi
+if git -C "$SUBMODULE" apply --reverse --check "$PATCH" 2>/dev/null; then
+    echo "MuJoCo Jazzy 补丁已应用。"
+elif git -C "$SUBMODULE" apply --check "$PATCH"; then
+    git -C "$SUBMODULE" apply "$PATCH"
+    echo "MuJoCo Jazzy 补丁应用完成。"
+else
+    echo "错误：补丁与现有修改冲突。请检查子模块差异；脚本不会丢弃你的修改。" >&2
+    exit 1
+fi

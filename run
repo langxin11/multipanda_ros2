@@ -1,96 +1,39 @@
 #!/usr/bin/env bash
-set -e
-
-# *********************************************************
-# One-click development environment start-up
-#   Developed by: Jon Skerlj
-#   Last update: 04.02.2026
-#   Tested using Ubuntu 22.04
-# *********************************************************
-
-# Setup Paths
-REPO_PATH=$(git rev-parse --show-toplevel)
-REPO_NAME=$(basename "$REPO_PATH")
-
-# ==============================================================================
-# 1. Path and Identity Setup
-# ==============================================================================
-REPO_PATH=$(git rev-parse --show-toplevel)
-REPO_NAME=$(basename "$REPO_PATH")
-IMAGE_NAME="build-env"
-CONTAINER_NAME="multipanda-container"
-
-# Detect Architecture
-ARCH=$(uname -m)
-case "$ARCH" in
-    x86_64)  TAG_ARCH="amd64" ;;
-    aarch64) TAG_ARCH="arm64" ;;
-    *)       TAG_ARCH="$ARCH" ;;
+set -euo pipefail
+REPO_PATH=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+IMAGE_TAG=${MULTIPANDA_IMAGE:-multipanda-jazzy:dev}
+CONTAINER_NAME=${MULTIPANDA_CONTAINER:-multipanda-jazzy}
+HEADLESS=false
+case "${1:-}" in
+    --help|-h)
+        echo "用法：./run [--headless]"
+        echo "进入 Jazzy 开发容器。--headless 不转发图形界面，适用于 SSH 和自动验证。"
+        echo "工作区：~/multipanda_ws；源码：~/multipanda_ws/src。"
+        exit 0 ;;
+    --headless) HEADLESS=true; shift ;;
+    '') ;;
+    *) echo "未知选项：$1" >&2; exit 2 ;;
 esac
-IMAGE_TAG="${IMAGE_NAME}:${REPO_NAME}-${TAG_ARCH}"
-
-# ==============================================================================
-# 2. Hardware Support Checks
-# ==============================================================================
-check_nvidia_gpu() {
-    command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1
-}
-
-check_gpu_support() {
-    docker info 2>/dev/null | grep -q "nvidia"
-}
-
-# Ensure XServer access
-xhost +local:docker > /dev/null
-
-# ==============================================================================
-# 3. Dynamic Argument Construction (Using All Your Flags)
-# ==============================================================================
-# Workspace Path inside container
-WS_SRC="/home/developer/multipanda_ws/src"
-
-# GPU Configuration
-WITH_GPU_CONFIG=()
-if check_nvidia_gpu && check_gpu_support; then
-    # Adding 'display' capability is key for OpenGL performance (MuJoCo/RViz)
-    WITH_GPU_CONFIG+=(--gpus 'all,"capabilities=compute,utility,graphics,display"')
-    echo "GPU support detected."
-else
-    echo "No GPU support. Using CPU rendering."
+[[ $# -eq 0 ]] || { echo "参数过多；请使用 --help。" >&2; exit 2; }
+"$REPO_PATH/tools/prepare_jazzy"
+GUI_ARGS=()
+if ! $HEADLESS && [[ -n ${DISPLAY:-} ]]; then
+    command -v xhost >/dev/null && xhost +si:localuser:"$(id -un)" >/dev/null
+    GUI_ARGS+=(--env "DISPLAY=$DISPLAY" --volume /tmp/.X11-unix:/tmp/.X11-unix:rw)
+    [[ ! -d /dev/dri ]] || GUI_ARGS+=(--device /dev/dri)
+    if command -v nvidia-smi >/dev/null && docker info --format '{{json .Runtimes}}' | grep -q nvidia; then
+        GUI_ARGS+=(--gpus all --env NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display)
+    fi
 fi
-
-# ==============================================================================
-# 4. Container Execution
-# ==============================================================================
-if [ "$(docker ps -q -f name=$CONTAINER_NAME)" ]; then
-    echo "$CONTAINER_NAME is already running."
+if docker container inspect "$CONTAINER_NAME" >/dev/null 2>&1; then
+    docker start "$CONTAINER_NAME" >/dev/null
 else
-    echo "Launching $CONTAINER_NAME..."
-    
-    docker run -d \
-        --name "$CONTAINER_NAME" \
-        --user "$(id -u):$(id -g)" \
-        --network host \
-        --ipc host \
-        --pid host \
-        --privileged \
-        --tty \
-        --interactive \
-        --env "DISPLAY=$DISPLAY" \
-        --env "USER=$(id -u)" \
-        --env "ROS_DOMAIN_ID=1" \
-        --volume "/tmp/.X11-unix:/tmp/.X11-unix:rw" \
-        --volume "/dev:/dev" \
-        --volume "$HOME:/host" \
-        --volume "${REPO_PATH}:/home/developer/multipanda_ws/src/" \
-        --ulimit rtprio=99 \
-        --ulimit rttime=-1 \
-        --ulimit memlock=-1 \
-        --cap-add=sys_nice \
-        "${WITH_GPU_CONFIG[@]}" \
-        "$IMAGE_TAG"
+    docker run -d --name "$CONTAINER_NAME" --network host --ipc host \
+        --cap-add SYS_NICE --ulimit rtprio=99 --ulimit memlock=-1 \
+        --env "ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-1}" \
+        --volume "${CONTAINER_NAME}-workspace:/home/developer/multipanda_ws" \
+        --volume "$REPO_PATH:/home/developer/multipanda_ws/src" \
+        "${GUI_ARGS[@]}" "$IMAGE_TAG" sleep infinity >/dev/null
 fi
-
-# Enter the container
-echo "➡ Entering environment..."
-docker exec -it --user developer "$CONTAINER_NAME" /bin/bash -c "source /home/developer/.bashrc && bash"
+echo "进入 $CONTAINER_NAME。首次使用请运行 ./src/tools/build_jazzy。"
+docker exec -it --user developer "$CONTAINER_NAME" bash

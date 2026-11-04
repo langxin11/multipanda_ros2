@@ -5,38 +5,25 @@ if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-find_package(Franka REQUIRED) # Franka_DIR will provide the path to the libfranka installation
-
-set(THIS_PACKAGE_INCLUDE_DEPENDS
-  ament_index_cpp
-  controller_interface
-  controller_manager_msgs
-  hardware_interface
-  pluginlib
-  rclcpp
-  realtime_tools
-  Franka
-  franka_msgs
-  std_msgs
-  controller_manager
-)
-
-# find dependencies
-
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
-find_package(ament_cmake_core REQUIRED)
-find_package(backward_ros REQUIRED)
-foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
-  find_package(${Dependency} REQUIRED)
-endforeach()
+find_package(ament_index_cpp REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(Franka REQUIRED)
+find_package(Eigen3 REQUIRED)
+find_package(Threads REQUIRED)
+
+add_executable(cartesian_impedance_demo src/cartesian_impedance_demo.cpp)
+target_compile_features(cartesian_impedance_demo PRIVATE cxx_std_17)
+target_link_libraries(cartesian_impedance_demo Franka::Franka Eigen3::Eigen Threads::Threads)
+
+add_executable(franka_read_only_node src/franka_read_only_node.cpp)
+target_compile_features(franka_read_only_node PRIVATE cxx_std_17)
+ament_target_dependencies(franka_read_only_node rclcpp sensor_msgs)
+target_link_libraries(franka_read_only_node Franka::Franka)
 
 add_executable(franka_control2_node src/franka_control2_node.cpp)
-ament_target_dependencies(franka_control2_node 
-  controller_manager
-  Franka
-  franka_msgs
-  realtime_tools)
+ament_target_dependencies(franka_control2_node ament_index_cpp)
   
 target_include_directories(franka_control2_node
   PRIVATE
@@ -56,7 +43,7 @@ if(BUILD_TESTING)
 endif()
 
 install(
-  TARGETS franka_control2_node
+  TARGETS franka_control2_node franka_read_only_node cartesian_impedance_demo
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
 

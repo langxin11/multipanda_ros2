@@ -161,7 +161,7 @@ def generate_launch_description():
         Node(
             package='franka_control2',
             executable='franka_control2_node',
-            parameters=[{'robot_description': robot_description}, franka_controllers],
+            parameters=[franka_controllers],
             remappings=[('joint_states', 'franka/joint_states')],
             output={
                 'stdout': 'screen',
@@ -181,7 +181,7 @@ def generate_launch_description():
             executable='joint_state_publisher',
             name='joint_state_publisher',
             parameters=[
-                {'source_list': ['franka/joint_states', 
+                {'source_list': ['joint_state_broadcaster/joint_states',
                                  'panda_gripper/joint_states',
                                  '/mj_left_gripper_sim_node/joint_states',
                                  '/mj_right_gripper_sim_node/joint_states'],
@@ -190,39 +190,39 @@ def generate_launch_description():
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['joint_state_broadcaster'],
+            arguments=['joint_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         # Real nodes
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['real_multi_mode_controller'],
+            arguments=['real_multi_mode_controller', '--param-file', franka_controllers],
             output='screen',
             condition=UnlessCondition(use_fake_hardware),
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['rl_left_state_broadcaster'],
+            arguments=['rl_left_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['rl_right_state_broadcaster'],
+            arguments=['rl_right_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['rl_left_model_broadcaster'],
+            arguments=['rl_left_model_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['rl_right_model_broadcaster'],
+            arguments=['rl_right_model_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
@@ -247,31 +247,31 @@ def generate_launch_description():
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['sim_multi_mode_controller'],
+            arguments=['sim_multi_mode_controller', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['mj_left_state_broadcaster'],
+            arguments=['mj_left_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['mj_right_state_broadcaster'],
+            arguments=['mj_right_state_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['mj_left_model_broadcaster'],
+            arguments=['mj_left_model_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['mj_right_model_broadcaster'],
+            arguments=['mj_right_model_broadcaster', '--param-file', franka_controllers],
             output='screen',
         ),
         Node(

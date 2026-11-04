@@ -1,0 +1,45 @@
+# Conservative planning acceleration limits in rad/s^2.
+# Velocity and position limits are taken from the URDF.
+joint_limits:
+  left_joint1:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint2:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint3:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint4:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint5:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint6:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  left_joint7:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint1:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint2:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint3:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint4:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint5:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint6:
+    has_acceleration_limits: true
+    max_acceleration: 1.0
+  right_joint7:
+    has_acceleration_limits: true
+    max_acceleration: 1.0

@@ -1,0 +1,25 @@
+{
+  "passed": true,
+  "hardware": "Panda without gripper",
+  "system_version": "4.2.2",
+  "controllers": {
+    "panda_arm_controller": "inactive",
+    "joint_state_broadcaster": "active"
+  },
+  "planning_group": "panda_arm",
+  "planned_joint": "panda_joint7",
+  "planned_offset_rad": 0.02,
+  "velocity_scaling": 0.05,
+  "acceleration_scaling": 0.05,
+  "trajectory_points": 14,
+  "planned_duration_s": 1.273172593,
+  "trajectory_executed": false,
+  "robot_parameters_overwritten": false,
+  "controllers_after_activation": {
+    "panda_arm_controller": "active",
+    "joint_state_broadcaster": "active"
+  },
+  "hold_observation_s": 5,
+  "max_hold_deviation_rad": 0.00041572506478426696,
+  "activation_passed": true
+}

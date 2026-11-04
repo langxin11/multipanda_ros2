@@ -47,3 +47,7 @@ sim_multi_mode_controller:
         names: ["panda_cartesian_impedance_controller"]
         resources:
             panda_cartesian_impedance_controller: ["mj_right"]
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true

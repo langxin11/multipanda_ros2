@@ -66,7 +66,8 @@ Eigen::Matrix3d rotationExp(const Eigen::Vector3d& rotation_vector) {
 }
 }  // namespace
 
-Robot::Robot(const std::string& robot_ip, const rclcpp::Logger& logger) {
+Robot::Robot(const std::string& robot_ip, const rclcpp::Logger& logger,
+             bool set_default_parameters) {
   franka::RealtimeConfig rt_config = franka::RealtimeConfig::kEnforce;
   
   // measurement code
@@ -82,7 +83,12 @@ Robot::Robot(const std::string& robot_ip, const rclcpp::Logger& logger) {
   }
   try{
     robot_ = std::make_unique<franka::Robot>(robot_ip, rt_config);
-    setDefaultParams();
+    if (set_default_parameters) {
+      setDefaultParams();
+    } else {
+      RCLCPP_INFO(logger, "保留机器人现有阻抗、碰撞阈值及负载参数");
+      init_params_set = true;  // Recovery must also preserve the selected existing parameters.
+    }
   }
   catch(franka::ControlException& e){
     RCLCPP_ERROR(logger, "Robot is in control error state! Please trigger automatic recovery first.");

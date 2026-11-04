@@ -1,160 +1,83 @@
-# =======================================================================================
-# Docker Development Environment for multipanda_ros2
-# =======================================================================================
-FROM ros:humble
+FROM ros:jazzy-ros-base
 
-ENV DEBIAN_FRONTEND noninteractive
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ARG DEBIAN_FRONTEND=noninteractive
+ARG BUILD_JOBS=4
 ARG USER_UID=1000
 ARG USER_GID=1000
-ARG HOME_DIR=/home/developer
-ARG WS_NAME=multipanda_ws
+ARG DQROBOTICS_COMMIT=d4fd2838fe26cccaa4b6e45ad9c7e5e628d10213
 
-# *********************************************************
-# User Identity & Core Ubuntu Packages
-# *********************************************************
-RUN groupadd --gid $USER_GID developer || true && \
-    useradd --uid $USER_UID --gid $USER_GID --create-home developer && \
-    echo 'root:install' | chpasswd && \
-    echo 'developer:123' | chpasswd && \
-    apt-get update && apt-get install -y \
-    software-properties-common build-essential cmake git wget curl zip sudo \
-    nano net-tools lsof pulseaudio iputils-ping iproute2 libpoco-dev \
-    && adduser developer sudo \
-    # This line ensures the sudo group is active and requires the password you set
-    && echo '%sudo ALL=(ALL:ALL) ALL' >> /etc/sudoers \
+# Ubuntu 24.04 / Jazzy: use the system Eigen and compiler consistently.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build git curl ca-certificates sudo locales \
+    libeigen3-dev libpoco-dev libfmt-dev libboost-all-dev libyaml-cpp-dev \
+    libglfw3-dev libglew-dev libgl1-mesa-dev libosmesa6-dev \
+    libxinerama-dev libxcursor-dev libxrandr-dev libxi-dev zlib1g-dev \
+    python3-colcon-common-extensions python3-rosdep python3-pip \
+    python3-numpy python3-scipy python3-matplotlib python3-pytest \
+    xvfb xauth mesa-utils \
+    ros-jazzy-desktop ros-jazzy-ros2-control ros-jazzy-ros2-controllers \
+    ros-jazzy-moveit ros-jazzy-warehouse-ros-sqlite ros-jazzy-rosbridge-server \
+    ros-jazzy-camera-info-manager ros-jazzy-image-transport \
+    ros-jazzy-backward-ros ros-jazzy-generate-parameter-library \
+    ros-jazzy-hardware-interface-testing ros-jazzy-ros2-control-test-assets \
+    ros-jazzy-ament-cmake-gmock ros-jazzy-ament-cmake-pytest \
+    ros-jazzy-ament-lint-auto ros-jazzy-ament-lint-common \
+    ros-jazzy-ament-cmake-clang-format ros-jazzy-ament-cmake-clang-tidy \
+    ros-jazzy-joint-state-publisher-gui ros-jazzy-rqt-controller-manager \
+    ros-jazzy-teleop-twist-keyboard ros-jazzy-teleop-twist-joy \
+    && locale-gen en_US.UTF-8 zh_CN.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
 
-# Set GCC-11 as the default compiler
-RUN apt-get update && apt-get install -y gcc-11 g++-11 && \
-    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-11 100 \
-    --slave /usr/bin/g++ g++ /usr/bin/g++-11
+# Panda's FCI version must match libfranka; ROS upgrades do not change this pin.
+RUN mkdir -p /tmp/libfranka \
+    && curl --fail --location --retry 3 --connect-timeout 20 \
+      https://codeload.github.com/frankarobotics/libfranka/tar.gz/refs/tags/0.9.2 \
+      | tar -xz --strip-components=1 -C /tmp/libfranka \
+    && curl --fail --location --retry 3 --connect-timeout 20 \
+      https://codeload.github.com/frankaemika/libfranka-common/tar.gz/e6aa0fc210d93fe618bfd8956829a264d5476ba8 \
+      | tar -xz --strip-components=1 -C /tmp/libfranka/common \
+    && cmake -S /tmp/libfranka -B /tmp/libfranka/build \
+      -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF \
+    && cmake --build /tmp/libfranka/build --parallel ${BUILD_JOBS} \
+    && cmake --install /tmp/libfranka/build \
+    && rm -rf /tmp/libfranka
 
-# *********************************************************
-# Python Environment & Libraries
-# *********************************************************
-RUN apt-get update && apt-get install -y python3-pip && \
-    ln -s /usr/bin/python3 /usr/bin/python
+# The official archive includes headers and shared libraries; the ROS patch
+# exports its Findmujoco.cmake module for downstream packages.
+# Avoid downloading/building MuJoCo's private third-party dependency trees.
+RUN cd /tmp \
+    && MUJOCO_ARCH=$(uname -m) \
+    && curl --fail --location --retry 3 --connect-timeout 20 --remote-name \
+      https://github.com/google-deepmind/mujoco/releases/download/3.2.0/mujoco-3.2.0-linux-${MUJOCO_ARCH}.tar.gz \
+    && curl --fail --location --retry 3 --connect-timeout 20 --remote-name \
+      https://github.com/google-deepmind/mujoco/releases/download/3.2.0/mujoco-3.2.0-linux-${MUJOCO_ARCH}.tar.gz.sha256 \
+    && sha256sum --check mujoco-3.2.0-linux-${MUJOCO_ARCH}.tar.gz.sha256 \
+    && tar -xzf mujoco-3.2.0-linux-${MUJOCO_ARCH}.tar.gz --strip-components=1 -C /usr/local \
+    && rm mujoco-3.2.0-linux-${MUJOCO_ARCH}.tar.gz*
 
-# Remove pip warning update messages
-ENV PIP_DISABLE_PIP_VERSION_CHECK 1
+# Build a fixed DQ Robotics revision against the same Eigen as the workspace.
+RUN mkdir /tmp/dqrobotics \
+    && curl --fail --location --retry 3 \
+      https://codeload.github.com/dqrobotics/cpp/tar.gz/${DQROBOTICS_COMMIT} \
+      | tar -xz --strip-components=1 -C /tmp/dqrobotics \
+    && cmake -S /tmp/dqrobotics -B /tmp/dqrobotics/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /tmp/dqrobotics/build --parallel ${BUILD_JOBS} \
+    && cmake --install /tmp/dqrobotics/build \
+    && rm -rf /tmp/dqrobotics && ldconfig
 
-RUN python3 -m pip install -U \
-    argcomplete pyserial \
-    matplotlib scipy playsound panda-python pytest
+RUN groupadd --non-unique --gid ${USER_GID} developer \
+    && useradd --non-unique --uid ${USER_UID} --gid developer \
+      --create-home --shell /bin/bash developer \
+    && echo 'developer ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/developer \
+    && chmod 0440 /etc/sudoers.d/developer \
+    && mkdir -p /home/developer/multipanda_ws/src \
+    && echo 'source /opt/ros/jazzy/setup.bash' >> /home/developer/.bashrc \
+    && echo 'if [ -f ~/multipanda_ws/install/setup.bash ]; then source ~/multipanda_ws/install/setup.bash; fi' >> /home/developer/.bashrc \
+    && chown -R ${USER_UID}:${USER_GID} /home/developer
 
-# *********************************************************
-# 3. Source Builds (MuJoCo, Eigen, Libfranka)
-# *********************************************************
-
-# Switch to root to install dependencies and system-level libraries
-USER root
-RUN mkdir -p $HOME_DIR/Libraries $HOME_DIR/source_code
-WORKDIR $HOME_DIR/source_code
-
-# MuJoCo 3.2.0
-RUN sudo apt-get update && sudo apt-get install -y \
-    libglfw3 libglfw3-dev libgl1-mesa-dev libxinerama-dev libxcursor-dev libxrandr-dev libxi-dev ninja-build zlib1g-dev clang-12 && \
-    git clone -b 3.2.0 https://github.com/google-deepmind/mujoco.git && \
-    cd mujoco && mkdir build && cd build && \
-    cmake .. -DCMAKE_INSTALL_PREFIX=$HOME_DIR/Libraries/mujoco && \
-    cmake --build . --parallel $(nproc) && cmake --install .
-
-# Eigen 3.3.9
-RUN curl -L https://gitlab.com/libeigen/eigen/-/archive/3.3.9/eigen-3.3.9.tar.gz -o eigen.tar.gz && \
-    tar -xzf eigen.tar.gz && cd eigen-3.3.9 && mkdir build && cd build && \
-    cmake .. && sudo make install
-
-# Libfranka 0.9.2
-RUN git clone https://github.com/frankaemika/libfranka.git && \
-    cd libfranka && git checkout 0.9.2 && git submodule update --init --recursive && \
-    mkdir build && cd build && \
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=$HOME_DIR/Libraries/libfranka .. && \
-    cmake --build . --parallel $(nproc) && cmake --install .
-
-# Ensure the developer user owns the libraries we just built as root
-RUN chown -R developer:developer $HOME_DIR/Libraries
-# *********************************************************
-# ROS2 Workspace & Special Repositories
-# *********************************************************
-# Create Workspace Structure
-RUN mkdir -p $HOME_DIR/$WS_NAME/src
-WORKDIR $HOME_DIR/$WS_NAME/src
-
-# Install dqrobotics
-RUN add-apt-repository ppa:dqrobotics-dev/release && apt-get update && apt-get install libdqrobotics
-
-# Install the package dependencies
-RUN apt-get update -y && apt-get install -y --allow-unauthenticated \
-    software-properties-common \
-    clang-14 \
-    clang-format-14 \
-    clang-tidy-14 \
-    libqt5gui5 \
-    libqt5widgets5 \
-    libqt5core5a \
-    libgl1-mesa-glx \
-    libgl1-mesa-dri \
-    ros-humble-control-msgs \
-    ros-humble-xacro \
-    ros-humble-ament-cmake-clang-format \
-    ros-humble-ament-clang-format \
-    ros-humble-ament-flake8 \
-    ros-humble-ament-cmake-clang-tidy \
-    ros-humble-angles \
-    ros-humble-ros2-control \
-    ros-humble-realtime-tools \
-    ros-humble-control-toolbox \    
-    ros-humble-controller-manager \
-    ros-humble-hardware-interface \
-    ros-humble-hardware-interface-testing \
-    ros-humble-launch-testing \
-    ros-humble-generate-parameter-library \
-    ros-humble-controller-interface \
-    ros-humble-ros2-control-test-assets \
-    ros-humble-controller-manager \
-    ros-humble-moveit \
-    ros-humble-nav-msgs \
-    ros-humble-joint-state-publisher-gui \
-    ros-humble-camera-info-manager \
-    ros-humble-joint-state-publisher \
-    ros-humble-joint-state-broadcaster \
-    ros-humble-warehouse-ros-sqlite \
-    ros-humble-joint-trajectory-controller \
-    ros-humble-rqt \
-    ros-humble-joint-trajectory-controller \
-    ros-humble-rqt-common-plugins \
-    ros-humble-rqt-controller-manager \
-    ros-humble-rqt-robot-steering \
-    ros-humble-rqt-tf-tree \
-    ros-humble-rqt-graph \
-    ros-humble-rqt-reconfigure \
-    ros-humble-rqt-plot \
-    ros-humble-teleop-twist-keyboard \
-    ros-humble-joy \
-    ros-humble-teleop-twist-joy \
-    ros-humble-rosbridge-server \
-    && rm -rf /var/lib/apt/lists/*
-
-# *********************************************************
-# Rosdep Initialization
-# *********************************************************
-
-# Initialize rosdep (Check if already initialized to avoid errors)
-RUN if [ ! -f /etc/ros/rosdep/sources.list.d/20-default.list ]; then \
-    rosdep init; \
-    fi
-RUN rosdep update
-
-# *********************************************************
-# Environment Config
-# *********************************************************
-# Source ROS2 and set library paths in bashrc
-RUN echo 'source /opt/ros/humble/setup.bash' >> $HOME_DIR/.bashrc && \
-    echo 'export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/Libraries/libfranka/lib:$HOME/Libraries/mujoco/lib' >> $HOME_DIR/.bashrc && \
-    echo 'export CMAKE_PREFIX_PATH=$HOME/Libraries/libfranka/lib/cmake:$HOME/Libraries/mujoco/lib/cmake' >> $HOME_DIR/.bashrc
-
-# Ensure developer owns their home directory
-RUN chown -R developer:developer $HOME_DIR
-
+ENV LANG=zh_CN.UTF-8
+ENV LC_ALL=zh_CN.UTF-8
 USER developer
-WORKDIR $HOME_DIR/$WS_NAME/
+WORKDIR /home/developer/multipanda_ws
+CMD ["bash"]

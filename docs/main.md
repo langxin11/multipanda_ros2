@@ -1,6 +1,6 @@
 # Documentation for multipanda_ros2
 `multipanda_ros2` is a `ros2_control`-based framework for the popular, now unsupported, Franka Emika Robot (Panda).
-It is built on ROS2 Humble, and as a consequence, Ubuntu 22.04. Support for newer versions will be released as they come.
+This branch targets ROS 2 Jazzy on Ubuntu 24.04. See the [中文安装与验证指南](../README.zh-CN.md).
 It is capable of controlling an arbitrary number of locally connected FCI-enabled robots accessible via their IP addresses.
 The primary features of the framework include:
 - ROS2 compatibility (naturally)
@@ -34,7 +34,7 @@ The packages inside the `garmi_packages` folder constitute an example of how you
 ## Other packages
 
 ### franka_control2
-A `ros2_control` node copied from the original repo. All the real robot launch files execute this particular version, instead of the one installed using `apt install`, for better transparency. It is identical to the default `ros2_control`'s node.
+A compatibility executable that forwards to Jazzy's installed `controller_manager/ros2_control_node`, preserving the existing launch interface and ROS arguments.
 
 ### franka_example_controllers
 A series of example controllers for both one-arm and two-arm cases, some written by Franka Emika, some by me. It is intended to be used as a starting point for writing a new controller.

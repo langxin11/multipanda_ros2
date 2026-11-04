@@ -147,3 +147,7 @@ cartesian_velocity_example_controller:
 cartesian_pose_example_controller:
   ros__parameters:
     arm_id: panda
+
+joint_state_broadcaster:
+  ros__parameters:
+    use_local_topics: true
