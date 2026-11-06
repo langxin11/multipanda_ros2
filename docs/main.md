@@ -12,7 +12,10 @@ The primary features of the framework include:
 In each of the following sections, in-depth details about the various parts of the framework are introduced. The aim of the documentation is to make the package more understandable and easily customizable for your own uses.
 
 ## Installation guide
-Please see the [main README.md](../README.md) for installation instructions.
+Please see the [中文 Jazzy installation guide](../README.zh-CN.md) for installation
+instructions and the [validation report](jazzy-validation.zh-CN.md) for tested scope.
+The [controller tutorial](../franka_example_controllers/README.md) covers package
+names, plugin aliases and the Jazzy `spawner --param-file` workflow.
 
 ## In-depth documentation
 
@@ -38,7 +41,9 @@ A compatibility executable that forwards to Jazzy's installed `controller_manage
 
 ### franka_example_controllers
 A series of example controllers for both one-arm and two-arm cases, some written by Franka Emika, some by me. It is intended to be used as a starting point for writing a new controller.
-Please see the example controllers (I recommend `subcriber/cartesian_impedance_controller.cpp/hpp`) on how to structure your own one.
+See [src/subscriber/cartesian_impedance_controller.cpp](../franka_example_controllers/src/subscriber/cartesian_impedance_controller.cpp)
+and its [header](../franka_example_controllers/include/franka_example_controllers/subscriber/cartesian_impedance_controller.hpp)
+for the structure of a controller with a goal subscription.
 
 It is split into two categories: a `comless` group, which is the collection of example controllers from Franka that execute a hard-coded trajectory, and has no subscribers. The `subscriber` group, as the name implies, includes a subscriber which you can publish goal messages to.
 
@@ -79,4 +84,3 @@ A `SemanticComponentInterface` wrapper for processing the robot model and state 
 
 [libfranka-instructions]: https://frankaemika.github.io/docs/installation_linux.html
 [mujoco-instructions]: https://mujoco.readthedocs.io/en/latest/programming/#building-mujoco-from-source
-[humble-instructions]: https://docs.ros.org/en/humble/Installation.html

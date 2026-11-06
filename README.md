@@ -7,26 +7,34 @@
 This project implements most features from the original `franka_ros` repository in ROS 2 Jazzy, specifically for the Franka Emika Robot (Panda).
 This project significantly expands upon the original `franka_ros2` from the company, who dropped the support for the Pandas.
 
-Additionally, multi-arm mujoco simulation has been integrated, meaning you can now run the same controller on both simulated and real robots. 
-The simulation is designed as a plugin to the [`mujoco_ros_pkg`](https://github.com/ubi-agni/mujoco_ros_pkgs/). 
+Additionally, multi-arm mujoco simulation has been integrated, meaning you can now run the same controller on both simulated and real robots.
+The simulation is designed as a plugin to the [`mujoco_ros_pkg`](https://github.com/ubi-agni/mujoco_ros_pkgs/).
 
-**The current version relies on a [fork of the repository](https://github.com/tenfoldpaper/mujoco_ros_pkgs)**, which implements the `ros2_control` plugin as well as a generic `SystemInterface` for simple robot setups (e.g. a Panda arm mounted on a mobile base). This means, you should install the fork, not the original repo, until the two have been merged.
+This branch uses the pinned `mujoco_ros_pkgs` submodule and the tracked Jazzy patch
+applied by `./tools/prepare_jazzy`. Follow [README.zh-CN.md](README.zh-CN.md) to
+prepare it; replacing it with an independently cloned upstream checkout skips
+the tested version and compatibility patch.
 
 Work is ongoing to integrate FR3 into the architecture.
 
 ## Documentation
 
 Documentation for this project is available [here](./docs/main.md).
+Start with the [中文 Jazzy guide](README.zh-CN.md); the
+[custom controller tutorial](franka_example_controllers/README.md) explains the
+current package paths, retained plugin aliases, and Jazzy controller loading.
 
 ## Working features
 More thorough information is available in the documentation.
+The list below describes implemented interfaces. Actual Jazzy verification and
+remaining gaps are recorded in [the validation report](docs/jazzy-validation.zh-CN.md).
 
 * Real robot:
     * FrankaState broadcaster
     * All control interfaces (torque, position, velocity, Cartesian).
     * Example controllers for all interfaces
     * Controllers are swappable using rqt_controller_manager
-    * Runtime franka::ControlException error recovery via `~/service_server/error_recovery`
+    * Runtime franka::ControlException error recovery via `/<arm_id>_error_recovery_service_server/error_recovery`
         * Upon recovery, the previously executed control loop will be executed again, so no reloading necessary.
     * Runtime internal parameter setter services much like what is offered in the updated `franka_ros2`
 * Sim robot:
@@ -41,7 +49,9 @@ More thorough information is available in the documentation.
     * With the forked repository's `mujoco_ros2_control_system` package, you can easily add components with additional degrees of freedom to your robot. Take a look at `garmi_packages/garmi_description/robots/*.ros2_control.xacro` for an example on how to do this.
 
 ## Known issues
-* The default `franka_moveit_config` package depends on `warehouse_ros_mongo`, which has been deprecated. It has been changed to `warehouse_ros_sqlite` for now to ensure that `rosdep install` works properly. For now, please refer to this discussion [here](https://discourse.ros.org/t/fixing-moveit2-humble-moveit-ros-benchmarks-package/32048) for a potential solution; once a proper solution has been identified, it will be added.
+* MoveIt launch files still reference the old MongoDB node when `db:=true`.
+  Database support has not been migrated or validated. Keep the default `db:=false`;
+  installing `warehouse_ros_sqlite` does not configure a working database backend.
 
 ## Ubuntu 24.04 / ROS 2 Jazzy
 
@@ -55,14 +65,14 @@ The MuJoCo submodule is pinned and adapted by `./tools/prepare_jazzy`; its patch
 tracked in this repository. See the Chinese guide for dependency versions, launch
 commands, and the distinction between simulation tests and real-hardware validation.
 
-## Citation 
+## Citation
 If multipanda_ros2 framework helps your research, please cite our paper:
 
-**[Bridging the Sim-to-Real Gap with multipanda_ros2: A Real-Time ROS2 Framework for Multimanual Systems](https://ieeexplore.ieee.org/document/11696149)** 
+**[Bridging the Sim-to-Real Gap with multipanda_ros2: A Real-Time ROS2 Framework for Multimanual Systems](https://ieeexplore.ieee.org/document/11696149)**
 
 ```bibtex
 @INPROCEEDINGS{škerlj2026multipanda_ros2,
-      title={Bridging the Sim-to-Real Gap with multipanda_ros2: A Real-Time ROS2 Framework for Multimanual Systems}, 
+      title={Bridging the Sim-to-Real Gap with multipanda_ros2: A Real-Time ROS2 Framework for Multimanual Systems},
       author={Škerlj, Jon and Bien, Seongjin and Naceri, Abdeldjallil and Haddadin, Sami},
       booktitle={2026 IEEE International Conference on Robotics and Automation (ICRA)},
       year={2026},
@@ -84,4 +94,3 @@ All packages of `multipanda_ros2` are licensed under the [Apache 2.0 license][ap
 [mcbed-humble]: https://github.com/mcbed/franka_ros2/tree/humble
 [libfranka-instructions]: https://frankaemika.github.io/docs/installation_linux.html
 [mujoco-instructions]: https://mujoco.readthedocs.io/en/latest/programming/#building-mujoco-from-source
-[humble-instructions]: https://docs.ros.org/en/humble/Installation.html

@@ -10,7 +10,7 @@ The multi-mode controller (MMC) is a meta-package that consists of 5 packages, e
 We will first begin with the `multi_mode_controller` package, and go through the code structure and how you can implement a new controller in this framework.
 
 ## multi_mode_controller
-MMC provides its own structure for implementing new controllers, dubbed _controllets_ to distinguish it from the typical `ros2_control` controllers. 
+MMC provides its own structure for implementing new controllers, dubbed _controllets_ to distinguish it from the typical `ros2_control` controllers.
 
 ### How to implement a new controllet
 
@@ -19,7 +19,7 @@ For implementing a new controllet in the MMC framework, you must first implement
 
 The comless version serves as the core computation class of your controllet. The inherited "com" version simply adds the interfaces, meaning that one good controller can be inherited to multiple "com" classes for a wide range of different goal messages and use cases.
 
-We will take `comless_panda_cartesian_impedance_controller.cpp/h` as the example here. This controllet implements a standard Cartesian impedance controller for a single arm. 
+We will take `comless_panda_cartesian_impedance_controller.cpp/h` as the example here. This controllet implements a standard Cartesian impedance controller for a single arm.
 
 The comless class inherits from `PandaControllerBase` with a templated `Pose` and `Param` struct that you can customize. Instances of these will be used in the main 1khz torque computation loop.
 In our example, this is defined like:
@@ -41,7 +41,7 @@ Then you can use that as the template argument for declaring the inherited class
 // in the header file
 class ComlessPandaCartesianImpedanceController :
     public virtual PandaControllerBase<PandaCartesianImpedanceControllerParams,
-                                       PandaCartesianImpedanceControllerPose> 
+                                       PandaCartesianImpedanceControllerPose>
 ```
 Once you have defined the template structs, you can now move onto overriding the functions from the inherited `PandaControllerBase` class. The 3 functions that you need to override are:
 - `defaultParameters`
@@ -68,7 +68,7 @@ This implements the function that will be executed at 1khz, using a desired `Pos
 
 In our example, we begin the calculation by first getting all the data we need in this cycle:
 ``` cpp
-Pose current = getCurrentPose(); 
+Pose current = getCurrentPose();
 current.position -= getOffset().position;
 Eigen::Map<const Matrix7d> inertia(robot_data_[0]->mass().data());
 Eigen::Map<const Vector7d> coriolis(robot_data_[0]->coriolis().data());
@@ -78,7 +78,7 @@ Eigen::Map<const Vector7d> qD(robot_data_[0]->state().dq.data());
 ```
 
 In the next chunk, we use the desired `Pose` arg, and do the impedance control calculation.
-Notice that we use the `Param` to obtain the current stiffness and damping values. 
+Notice that we use the `Param` to obtain the current stiffness and damping values.
 After the calculations are done, we simply add the different torques up, and add it to the final desired tau, `tau_d`.
 ``` cpp
 Vector6d error;
@@ -99,7 +99,7 @@ tau_nullspace <<
     (p.nullspace_stiffness * (desired.q_n - current.q_n) -
     (2.0 * std::sqrt(p.nullspace_stiffness)) * qD);
 tau_d << tau_task + tau_nullspace + coriolis;
-``` 
+```
 
 Finally, we write the value of `tau_d` to the command torque reference that is passed as an argument:
 ``` cpp
@@ -154,7 +154,7 @@ See the example code for the full implementation, including headers.
 
 Once you've saved the code, you can now compile it by adding it to the MMC's `CMakeLists.txt`. Unlike other `ros2_control` controllers, there's no additional `xml` file that you need to add a description of.
 ``` cmake
-add_library(multi_mode_controller SHARED 
+add_library(multi_mode_controller SHARED
   src/robot_data.cpp # This is required!
   src/controller_factory.cpp # This is required!
   src/redundancy_resolution.cpp # This is required!
@@ -190,9 +190,9 @@ namespace panda_controllers {
 
 class PandaCartesianImpedanceController :
     public virtual ComlessPandaCartesianImpedanceController,
-    public virtual ControllerRosInterface<ServiceParameter, 
-                                          GoalMsg, 
-                                          Parameters, 
+    public virtual ControllerRosInterface<ServiceParameter,
+                                          GoalMsg,
+                                          Parameters,
                                           Pose> {
 // ...
 };
@@ -204,9 +204,9 @@ There are only 2 functions you need to override:
 This is not the callback function per se, but rather the function that that is called by the generic callback function that is already implemented in the inherited interface class.
 It is defined as:
 ``` cpp
-bool desiredPoseCallbackImpl(Pose& p_d, 
+bool desiredPoseCallbackImpl(Pose& p_d,
                              const Pose& p,
-                             const GoalMsg& msg) 
+                             const GoalMsg& msg)
 ```
 where `p_d` is the reference to the desired `Pose` that you saw earlier in the `computeTaulImpl`, `p` is the robot's current `Pose`, and `msg` is the message you received.
 `p` is provided to allow for implementing safety checks before setting the desired pose. In the example, this is used to check for whether `p_d` is too far away from the current pose, as that would result in too high of a torque value.
@@ -214,10 +214,10 @@ where `p_d` is the reference to the desired `Pose` that you saw earlier in the `
 - setParametersCallbackImpl
 This function is similar to the above: it provides you with the reference to the desired `Param` `p_d`, the current `Param` `p`, and the typical ROS2 service request and response variables.
 ``` cpp
-  bool setParametersCallbackImpl(Parameters& p_d, 
+  bool setParametersCallbackImpl(Parameters& p_d,
         const Parameters& p,
-        const ServiceParameter::Request::SharedPtr& req, 
-        const ServiceParameter::Response::SharedPtr& res) 
+        const ServiceParameter::Request::SharedPtr& req,
+        const ServiceParameter::Response::SharedPtr& res)
 ```
 
 After you're done, you need to register it to the factor just like the comless version:
@@ -262,7 +262,7 @@ On the other hand, if you have a controllet that takes control of 2 robot arms, 
 Controllers[0] = {name: 'dual_panda_cartesian_impedance_controller', resource: ['left&right']}
 ```
 
-Once the request is received, the MMC handles the resource management, and your new controllet will start in ~2ms (i.e. 2 control cycles).
+Once the request is received, the MMC handles resource management and switches the active controllet. Switching latency depends on the control loop and scheduling; the Jazzy validation does not establish a timing guarantee.
 
 #### Loaded controllet
 The loaded up controllet's goal pose subscriber and param setter service become available under the format `/{robot_name}/{controllet_name}/(desired_pose/parameters)`. For multi-arm controllets, the `&` is replaced by `_and_`. So for the above single- and dual-arm cases, they would be:
@@ -279,7 +279,7 @@ Controller[] controllers
 where the return argument `controllers` contain the information.
 
 ### Configuring the launch yaml
-To use the MMC, you need to first add it in the corresponding `.yaml` file that is loaded up by the launch file in `franka_bringup`. A simple example can be found in `multimode.yaml`. The MMC is listed like any other `ros2_control` controller, with additional parameters to define which controllets you want to load up, the resources they need, and what controllet you want the MMC to run by default when it is activated:
+To use the MMC, you need to first add it in the corresponding `.yaml` file that is loaded up by the launch file in `franka_bringup`. A real-robot example is [single_multimode.yaml](../../franka_bringup/config/real/single_multimode.yaml); the simulation configuration is [single_sim_controllers.yaml](../../franka_bringup/config/sim/single_sim_controllers.yaml). On Jazzy, pass the selected file to the spawner with `--param-file`. The MMC is listed like any other `ros2_control` controller, with additional parameters to define which controllets you want to load up, the resources they need, and what controllet you want the MMC to run by default when it is activated:
 ``` yaml
 multi_mode_controller:
   ros__parameters:
@@ -298,10 +298,10 @@ multi_mode_controller:
 ```
 Each loaded controllet has its own set of internal variables, e.g. parameters and desired pose. They are not shared across controllets.
 
-For a multi-arm example, please look at `dual_multimode.yaml`.
+For a multi-arm example, see [dual_multimode.yaml](../../franka_bringup/config/real/dual_multimode.yaml).
 
 ### Other resources
-An example python script that makes use of the MMC can be found in `mmc_demo_script.py`. It simply sleeps for 20 seconds between each controllet, and then activates the next controllet.
+See [tools/verify_jazzy.py](../../tools/verify_jazzy.py) for simulation controller switching and goal publication, and the [motion generator guide](../../franka_multi_mode_controller/panda_motion_generators/Felix_README.md) for action-based examples. The former `mmc_demo_script.py` is not tracked in this repository.
 
 ## Other chapters
 - [Back to main](../main.md)

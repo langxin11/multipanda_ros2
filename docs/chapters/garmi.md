@@ -12,14 +12,14 @@ The bringup package is more or less identical to the `franka_bringup` package. I
 ## garmi_controllers
 This package contains two simple controllers, one each for the head and the base. The `head_controller` implements a basic PD torque position controller to control the head position. It takes a `Float64MultiArray` as an argument, with `data[0]` specifying the pan and `data[1]` specifying the tilt.
 
-The `mobile_base_controller` implements a basic velocity controller with non-holonomic considerations. It takes in a `Twist` message, which is then converted into individual wheel velocities based on the mobile base kinematic parameters. Only `position.x` and `rotation.z` components are taken into account.
+The `mobile_base_controller` implements a basic velocity controller with non-holonomic considerations. It takes in a `Twist` message, which is then converted into individual wheel velocities based on the mobile base kinematic parameters. Only `linear.x` and `angular.z` components are taken into account.
 
 This package can be used as a starting point for creating your own `controllers` package separate from the `franka_example_controllers`.
 
 ## garmi_description
-This package contains the MuJoCo XML files describing GARMI, and the corresponding xacro files. 
+This package contains the MuJoCo XML files describing GARMI, and the corresponding xacro files.
 
-The main xacro file, `garmi_sim.urdf.xacro` makes direct references to `franka_description`'s `panda_arm.xacro` and `hand.xacro` files; this is how you cna avoid having to make copies of the Panda description files. 
+The main xacro file, `garmi_sim.urdf.xacro` makes direct references to `franka_description`'s `panda_arm.xacro` and `hand.xacro` files; this is how you can avoid having to make copies of the Panda description files.
 
 The MuJoCo XML file is self-contained, as GARMI's model was built up separately from the original Panda MuJoCo XML. Though, it could be configured to look for common elements such as the mesh `.dae` files from `franka_description`. Nonetheless, given MuJoCo's relative inflexibility compared to `xacro` in performing functions and variable references, this might be more trouble than it is worth.
 

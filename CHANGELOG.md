@@ -1,5 +1,11 @@
 # Changelog
 
+## Updated 2026-11-06
+* Aligned tutorials with Ubuntu 24.04 / ROS 2 Jazzy: current package paths,
+  launch arguments, controller parameter files, and retained plugin aliases.
+* Replaced machine-specific motion-generator instructions and corrected both
+  generator entry points to validate five positional arguments independently of ROS options.
+
 ## Added 04.02.26
 * Added tools/ directory for one-click installation and start-up scripts utilizing docker.
 * Updated the installation instructions, especially one-click setup.

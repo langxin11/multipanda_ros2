@@ -2,13 +2,13 @@
 This package is the core of the `multipanda_ros2`, implementing the interfaces between `ros2_control` and the real/sim robots.
 
 Each configuration has a dedicated flavor of `franka_hardware`. The real robot interface is:
-- `FrankaMultiHardwareInterface` implemented in `franka_multi_hardware_interface.cpp/h`.
-    Interface for connecting to $n \geq 1$ Panda robots. 
+- `FrankaMultiHardwareInterface` implemented in `src/real/franka_multi_hardware_interface.cpp and include/franka_hardware/real/franka_multi_hardware_interface.hpp`.
+    Interface for connecting to $n \geq 1$ Panda robots.
 The corresponding MuJoCo alternative is:
-- `FrankaMjHardwareSystem` implemented in `franka_mj_hardware_system.cpp/h`.
-    Interface for simulating $n\geq 1$ Panda robots, and inherits from the `mujoco_ros2_control::MujocoRos2SystemInterface`. 
+- `FrankaMjHardwareSystem` implemented in `src/sim/franka_mj_hardware_system.cpp and include/franka_hardware/sim/franka_mj_hardware_system.hpp`.
+    Interface for simulating $n\geq 1$ Panda robots, and inherits from the `mujoco_ros2_control::MujocoRos2SystemInterface`.
 
-While the low-level implementations are different, with the real one using `libfranka` and the simulation using MuJoCo, the exposed interfaces on the ROS2 level are the same, i.e. you can run the exact same controller that you write for the real robot on the simulated robot, and vice versa. 
+While the low-level implementations are different, with the real one using `libfranka` and the simulation using MuJoCo, the exposed interfaces on the ROS2 level are the same, for the joint torque/position/velocity modes. Direct Cartesian hardware command interfaces are available only on the real robot. Cartesian impedance controllers that output joint torques can also run in simulation.
 
 ## Interface for real robots
 The real robot interface `FrankaMultiHardwareInterface` implements a wrapper around the `libfranka` to connect to the robot. The core logic of the wrapper is in the `Robot` class in `robot.cpp/hpp`. `libfranka` offers 5 different control modes (joint torque, position, velocity and Cartesian position, velocity). For each of the control mode, there is a corresponding callback function that returns the corresponding mode's variable. These callback functions do not implement any inherent logic; they simply write the data passed from the `FrankaMultiHardwareInterface` to the robot. As such, all safety features and command calculation needs to be handled by the controller that make use of these. Additionally, they implement several ROS2 service callbacks for changing the internal parameters of the robot on the FCI level.
@@ -21,7 +21,7 @@ Initializes the connection to the robots, given their names and IP addresses. FC
 It first performs a preliminary check on whether the loaded URDF and `arm.ros2_control.xacro` files are correctly configured.
 It also starts up the parameter service nodes and the error recovery nodes.
 - `export_state_interfaces` and `export_command_interfaces`
-States are robot states that are updated at 1khz, while the commands are values that will be written to the robot at 1khz. This essentially advertises to the `ros2_control` framework that these interfaces are available, which can be then claimed by a `ros2_control` controller. 
+States are robot states that are updated at 1khz, while the commands are values that will be written to the robot at 1khz. This essentially advertises to the `ros2_control` framework that these interfaces are available, which can be then claimed by a `ros2_control` controller.
 - `on_activate`
 Activates the connected robots. By default, all robots will run the `initializeContinuousReading` function, which does not execute any control loops but simply read off the data so that the `FrankaState` and `ModelFranka` objects are updated. This function internally calls the `libfranka`'s `read` function, which cannot be run simultaneously with a `control` function.
 - `read`
@@ -42,11 +42,11 @@ As the robot runs, it may run into various errors (e.g. joint velocity violation
 ``` bash
 ros2 service call /panda_error_recovery_service_server/error_recovery franka_msgs/srv/ErrorRecovery
 ```
-Current behavior will cause the running controller to be deactivated. You can of course add this service call into your own code to automate this process, and re-activate the controller again.
+The current recovery service attempts to restart the previous control mode after recovery. Do not assume it leaves the robot inactive. This recovery path has not been verified on real hardware in the Jazzy validation; inspect the cause and the controller state before requesting recovery.
 Errors that cause the robot to lock, e.g. severe torque violations, will require unlocking the robot and restarting the framework.
 
 ## Interface for simulated robots
-The simulated robot interface `FrankaMjHardwareSystem` works mostly identical to the real robot interfaces. Unlike the real robot, where the robot state and model calculations are handled by the master controller of the robot and thus they can be obtained by their corresponding `libfranka` functions, they are performed entirely in the `FrankaMjHardwareSystem` class' `read` and `write` functions. The `RobotSim` class serves as a replacement for the `Robot` class in the real scenario. This is simply a container for various MuJoCo indices that correspond to that particular robot. 
+The simulated robot interface `FrankaMjHardwareSystem` works mostly identical to the real robot interfaces. Unlike the real robot, where the robot state and model calculations are handled by the master controller of the robot and thus they can be obtained by their corresponding `libfranka` functions, they are performed entirely in the `FrankaMjHardwareSystem` class' `read` and `write` functions. The `RobotSim` class serves as a replacement for the `Robot` class in the real scenario. This is simply a container for various MuJoCo indices that correspond to that particular robot.
 
 
 Likewise, `ModelSim` class implemented in `model_sim.hpp` serves as a replacement for the `ModelFranka`. Since it also inherits from `ModelBase`, it offers the same functions as `ModelFranka` -- the main reason for the real-sim interoperability. Each `ModelSim` instance corresponds to a robot in simulation, and queries the MuJoCo's `mjModel` and `mjData` to extract the robot's parameters that match their real-robot equivalents.
@@ -54,7 +54,7 @@ Likewise, `ModelSim` class implemented in `model_sim.hpp` serves as a replacemen
 While the `ModelSim` class' inherited functions all have arguments, they are not used, since all the necessary data is contained in `mjData` and `mjModel`. It was simply left as-is for the sake of having identical interfaces.
 
 
-An important caveat is the gravity and Coriolis-related functions. Since these values are simply presented as a summed array in `qfrc_bias` in MuJoCo, it is difficult to ascertain the accuracy of these functions. For Coriolis, it simply returns `qfrc_bias - qfrc_gravcomp`, while gravity just returns `qfrc_gravcomp`. 
+An important caveat is the gravity and Coriolis-related functions. Since these values are simply presented as a summed array in `qfrc_bias` in MuJoCo, it is difficult to ascertain the accuracy of these functions. For Coriolis, it simply returns `qfrc_bias - qfrc_gravcomp`, while gravity just returns `qfrc_gravcomp`.
 
 `FrankaState` published by the simulation is not fully populated. Currently, only the following parameters are:
 - `q`
@@ -66,18 +66,18 @@ More state values will be added based on need/request.
 
 You can change the initial pose of the robot by setting the `initial_position` parameter in the `ros2_control.xacro` file of the robot setup that you wish to load. These values are then processed at `initSim` stage, and used to set `mjData* d->qpos` of the individual joints to that value.
 
-The simulated robot only supports joint-level states and commands, i.e. joint torque, position and velocity. Cartesian-level commands and states are currently not planned.
+The simulated robot only supports joint-level states and commands, i.e. joint torque, position and velocity. Direct Cartesian command interfaces are not implemented in simulation; Cartesian poses are still available through TF and the model/state interfaces.
 
 The `FrankaMjHardwareSystem` has a few differences to the real one:
 - `initSim`
 This function is inherited from the base class `mujoco_ros2_control::MujocoRos2SystemInterface`. It is where `const mjModel* m` and `mjData* d` variables are passed and assigned to the class.
-`RobotSim` class instances are created here, and `populateIndices` is executed to figure out the indices of the robot's various bodies, joints, actuators, sites, etc., corresponding to the `ns` argument passed to the **xacro** file. This is also the reason why your robot's name in the MuJoCo `xml` file must match the **xacro's `ns` value**. 
+`RobotSim` class instances are created here, and `populateIndices` is executed to figure out the indices of the robot's various bodies, joints, actuators, sites, etc., corresponding to the `ns` argument passed to the **xacro** file. This is also the reason why your robot's name in the MuJoCo `xml` file must match the **xacro's `ns` value**.
 Naturally, it does not start parameter service nodes or error recovery service nodes.
 
-Also, if `hand` is set to true (no-hand version is not supported at the moment; this will require a dedicated MuJoCo XML file that does not mount the hand), it starts up the gripper action servers, which again have identical interfaces to the real robot. 
+Also, if `hand` is set to true (no-hand version is not supported at the moment; this will require a dedicated MuJoCo XML file that does not mount the hand), it starts up the gripper action servers, which again have identical interfaces to the real robot.
 
 - `read`
-Popluates the `FrankaState` as well as the `ros2_control` state interfaces. The `read` function is executed within `mujoco_ros_pkg`'s corresponding loop function. 
+Popluates the `FrankaState` as well as the `ros2_control` state interfaces. The `read` function is executed within `mujoco_ros_pkg`'s corresponding loop function.
 - `write`
 Writes the command values based on the currently active controller. Again, this function is executed within `mujoco_ros_pkg`'s corresponding loop function.
 - `perform_command_mode_switch`

@@ -89,8 +89,13 @@ colcon test-result --verbose
 | MuJoCo | 3.2.0 |
 | DQ Robotics | 固定源码提交，见 `tools/Dockerfile` |
 
-不要照 Humble 分支的旧教程卸载系统 Eigen，或向系统 Python 全局执行 `pip install`。
-本分支的 Python 常用依赖通过 apt 安装；额外 Python 包应放在可访问系统 ROS 包的虚拟环境中。
+本分支使用系统 Eigen，无需卸载或另装旧版。Python 常用依赖通过 apt 安装；
+额外 Python 包应放在可访问系统 ROS 包的虚拟环境中，不向系统 Python 全局执行 `pip install`。
+
+进一步阅读：[模块文档](docs/main.md)、[自定义控制器教程](franka_example_controllers/README.md)、
+[多模式运动生成器说明](franka_multi_mode_controller/panda_motion_generators/Felix_README.md)。
+教程中的 `franka_controllers/JointImpedanceController` 等名称是保留的插件别名，
+实际 ROS 包名仍是 `franka_example_controllers`。
 
 Docker 与原生安装使用同一份源码。如果已有原生 Jazzy 工作区，需要先安装与
 [Dockerfile](tools/Dockerfile) 一致的系统依赖、libfranka、MuJoCo 和 DQ Robotics，再运行：

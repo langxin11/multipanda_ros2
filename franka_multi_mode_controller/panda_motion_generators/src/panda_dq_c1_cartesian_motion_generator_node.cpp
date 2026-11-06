@@ -7,19 +7,19 @@ using namespace panda_motion_generators;
 int main(int argc, char** argv) {
   //, "panda_motion_generator_node"
   rclcpp::init(argc, argv);
-  if(argc != 7){
-    std::cerr << "The node requires 5 arguments!\n"
-                 "Usage: node --ros-args action_name "
-                                        "robot_state_srv_name "
-                                        "controller_name "
-                                        "controllet_name "
-                                        "desired_pose_name" << std::endl;
+  const auto args = rclcpp::remove_ros_arguments(argc, argv);
+  if (args.size() != 6) {
+    std::cerr << "Usage: " << args[0]
+              << " action_name robot_state_srv_name controller_name"
+                 " controllet_name desired_pose_name [--ros-args ...]\n";
+    rclcpp::shutdown();
+    return 2;
   }
-  std::string action_name = argv[1];//"cartesian_via_motion";
-  std::string robot_state_srv_name = argv[2];//"/left_and_right/get_robot_states";
-  std::string controller_name = argv[3];//"multi_mode_controller";
-  std::string controllet_name = argv[4];//"panda_cartesian_impedance_controller";
-  std::string desired_pose_name = argv[5];//"/left_and_right/des_coupled_dual_cartesian_impedance_controller/desired_pose";
+  const std::string& action_name = args[1];
+  const std::string& robot_state_srv_name = args[2];
+  const std::string& controller_name = args[3];
+  const std::string& controllet_name = args[4];
+  const std::string& desired_pose_name = args[5];
   printf("Starting cartesian via motion generator with the following parameters:\n%s\n%s\n%s\n%s\n%s",
           action_name.c_str(),
           robot_state_srv_name.c_str(),
