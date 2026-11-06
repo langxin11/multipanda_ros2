@@ -19,6 +19,12 @@ names, plugin aliases and the Jazzy `spawner --param-file` workflow.
 
 ## In-depth documentation
 
+### [Learning demo: circle planning and trajectory analysis](../franka_learning_demos/README.md)
+
+A simulation-only first exercise with MoveIt Cartesian planning, synchronized
+controller reference/feedback, RViz paths, CSV records and reproducible figures.
+The guide includes experiments on radius and speed and explains the reported errors.
+
 ### [franka_bringup][bringup]
 The `franka_bringup` package contains all the launch files that are used to start the framework.
 

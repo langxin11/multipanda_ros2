@@ -1,6 +1,8 @@
 # Changelog
 
 ## Updated 2026-11-06
+* Added a simulation-only circle learning demo with MoveIt path validation,
+  synchronized trajectory recording, RViz overlays, plots and a Chinese exercise guide.
 * Aligned tutorials with Ubuntu 24.04 / ROS 2 Jazzy: current package paths,
   launch arguments, controller parameter files, and retained plugin aliases.
 * Replaced machine-specific motion-generator instructions and corrected both

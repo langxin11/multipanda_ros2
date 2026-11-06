@@ -1,0 +1,239 @@
+{
+  "date": "2026-11-06",
+  "unit_tests": {
+    "passed": 4,
+    "failed": 0
+  },
+  "integration": {
+    "passed": true,
+    "cases": {
+      "circle": {
+        "status": "completed",
+        "simulation_only": true,
+        "created_at": "2026-11-06T09:40:43.559536+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": 0.03,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": false,
+          "keep_alive": false,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-regression-3/circle",
+          "execution_timeout": 120.0
+        },
+        "execution_success": true,
+        "fraction": 1.0,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "hardware_plugin": "franka_hardware/FrankaMjHardwareSystem",
+        "fk_crosscheck_max_error": 6.082677653896189e-16,
+        "center_m": [
+          0.2770195700515774,
+          -2.394484517468301e-16,
+          0.5902695582751487
+        ],
+        "planned_duration_s": 6.151698855,
+        "trajectory_points": 63,
+        "planned_joint_names": [
+          "panda_joint1",
+          "panda_joint2",
+          "panda_joint3",
+          "panda_joint4",
+          "panda_joint5",
+          "panda_joint6",
+          "panda_joint7"
+        ],
+        "execute_error_code": 1,
+        "recorded_time_coverage": 0.9990736129751592,
+        "samples": 604,
+        "metrics": {
+          "position_rmse_m": 0.0004876202443910831,
+          "position_max_m": 0.0006113007712502183,
+          "position_p95_m": 0.0005687166436921467,
+          "orientation_max_rad": 0.02377234946838023,
+          "max_sample_gap_s": 0.01399999999999979,
+          "circle_distance_rmse_m": 0.00033169936152495984,
+          "final_target_error_m": 0.00035969552158695325
+        }
+      },
+      "plan_only": {
+        "status": "planned_only",
+        "simulation_only": true,
+        "created_at": "2026-11-06T09:40:55.179968+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": 0.03,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": true,
+          "keep_alive": false,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-regression-3/plan-only",
+          "execution_timeout": 120.0
+        },
+        "execution_success": false,
+        "fraction": 1.0,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "hardware_plugin": "franka_hardware/FrankaMjHardwareSystem",
+        "fk_crosscheck_max_error": 4.792017868440452e-16,
+        "center_m": [
+          0.2770195700515644,
+          -2.3692135660922937e-16,
+          0.5902695582749399
+        ],
+        "planned_duration_s": 6.151698855,
+        "trajectory_points": 63,
+        "planned_joint_names": [
+          "panda_joint1",
+          "panda_joint2",
+          "panda_joint3",
+          "panda_joint4",
+          "panda_joint5",
+          "panda_joint6",
+          "panda_joint7"
+        ],
+        "samples": 0
+      },
+      "blocked": {
+        "status": "failed",
+        "simulation_only": true,
+        "created_at": "2026-11-06T09:41:00.160436+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": 0.03,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": false,
+          "keep_alive": false,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-regression-3/blocked",
+          "execution_timeout": 120.0
+        },
+        "execution_success": false,
+        "fraction": 0.0,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "hardware_plugin": "franka_hardware/FrankaMjHardwareSystem",
+        "fk_crosscheck_max_error": 5.598750759729129e-16,
+        "center_m": [
+          0.27701957005164357,
+          -2.3389645202283703e-16,
+          0.5902695582759524
+        ],
+        "reason": "笛卡尔路径不完整（fraction=0.000000），没有执行",
+        "samples": 0
+      },
+      "invalid-radius": {
+        "status": "failed",
+        "simulation_only": true,
+        "created_at": "2026-11-06T09:41:09.977889+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": -0.01,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": false,
+          "keep_alive": false,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-regression-3/invalid-radius",
+          "execution_timeout": 120.0
+        },
+        "execution_success": false,
+        "fraction": null,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "reason": "radius 必须在 [0.005, 0.08] 范围内",
+        "samples": 0
+      },
+      "reject-non-simulation": {
+        "status": "failed",
+        "simulation_only": true,
+        "created_at": "2026-11-06T09:41:11.006019+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": 0.03,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": false,
+          "keep_alive": false,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-regression-3/reject-non-simulation",
+          "execution_timeout": 120.0
+        },
+        "execution_success": false,
+        "fraction": null,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "reason": "本例仅用于 MuJoCo，必须启用 use_sim_time",
+        "samples": 0
+      }
+    }
+  },
+  "gui": {
+    "passed": true,
+    "cases": {
+      "circle": {
+        "status": "completed",
+        "simulation_only": true,
+        "created_at": "2026-11-06T11:07:45.680486+00:00",
+        "frame": "panda_link0",
+        "tip": "panda_link8",
+        "config": {
+          "radius": 0.03,
+          "waypoints": 80,
+          "velocity_scale": 0.1,
+          "acceleration_scale": 0.1,
+          "eef_step": 0.003,
+          "plan_only": false,
+          "keep_alive": true,
+          "output_dir": "/home/developer/multipanda_ws/src/.jazzy_validation/circle-gui-verified/circle",
+          "execution_timeout": 120.0
+        },
+        "execution_success": true,
+        "fraction": 1.0,
+        "measurement": "FK of synchronized JTC reference and feedback; not external metrology",
+        "hardware_plugin": "franka_hardware/FrankaMjHardwareSystem",
+        "fk_crosscheck_max_error": 4.95909866289929e-16,
+        "center_m": [
+          0.27701957005164346,
+          -2.3377909794472195e-16,
+          0.5902695582759503
+        ],
+        "planned_duration_s": 6.151698855,
+        "trajectory_points": 63,
+        "planned_joint_names": [
+          "panda_joint1",
+          "panda_joint2",
+          "panda_joint3",
+          "panda_joint4",
+          "panda_joint5",
+          "panda_joint6",
+          "panda_joint7"
+        ],
+        "execute_error_code": 1,
+        "recorded_time_coverage": 0.9982608290405334,
+        "samples": 586,
+        "metrics": {
+          "position_rmse_m": 0.00048734929968649907,
+          "position_max_m": 0.0006114623396743734,
+          "position_p95_m": 0.0005693189400031842,
+          "orientation_max_rad": 0.023772581048003213,
+          "max_sample_gap_s": 0.016000000000000014,
+          "circle_distance_rmse_m": 0.00033088237901751134,
+          "final_target_error_m": 0.00036356635424819323
+        },
+        "shutdown_clean": true,
+        "shutdown_escalated": false,
+        "demo_shutdown_clean": true
+      }
+    }
+  },
+  "scope": "MuJoCo only; no real robot connected. Errors are FK-based simulation feedback measurements."
+}

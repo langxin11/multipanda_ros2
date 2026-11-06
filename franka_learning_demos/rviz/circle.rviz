@@ -1,0 +1,80 @@
+Panels:
+  - Class: rviz_common/Displays
+    Name: Displays
+  - Class: rviz_common/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Global Options:
+    Background Color: 30; 36; 46
+    Fixed Frame: panda_link0
+    Frame Rate: 30
+  Displays:
+    - Class: rviz_default_plugins/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 0.1
+      Plane Cell Count: 20
+      Color: 90; 100; 110
+    - Class: rviz_default_plugins/RobotModel
+      Name: Panda
+      Enabled: true
+      Alpha: 0.45
+      Description Source: Topic
+      Description Topic:
+        Value: /robot_description
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
+      Visual Enabled: true
+      Collision Enabled: false
+    - Class: rviz_default_plugins/Path
+      Name: Requested circle (white)
+      Enabled: true
+      Color: 215; 225; 235
+      Line Style: Billboards
+      Line Width: 0.004
+      Topic:
+        Value: /panda_circle_demo/paths/target
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Controller reference (cyan)
+      Enabled: true
+      Color: 25; 190; 210
+      Line Style: Billboards
+      Line Width: 0.003
+      Topic:
+        Value: /panda_circle_demo/paths/reference
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
+    - Class: rviz_default_plugins/Path
+      Name: Actual feedback (orange)
+      Enabled: true
+      Color: 255; 135; 45
+      Line Style: Billboards
+      Line Width: 0.002
+      Topic:
+        Value: /panda_circle_demo/paths/actual
+        Durability Policy: Transient Local
+        Reliability Policy: Reliable
+        History Policy: Keep Last
+        Depth: 1
+  Views:
+    Current:
+      Class: rviz_default_plugins/Orbit
+      Distance: 1.1
+      Focal Point:
+        X: 0.26
+        Y: 0
+        Z: 0.5
+      Pitch: 1.0
+      Yaw: 1.4
+Window Geometry:
+  Width: 1280
+  Height: 900

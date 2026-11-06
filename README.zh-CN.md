@@ -40,6 +40,19 @@ docker exec -it --user developer multipanda-jazzy bash
 
 容器启动后会自动加载 Jazzy 及已构建的工作区。修改 C++ 后重新运行构建脚本，并在启动节点前重新 `source install/setup.bash`。
 
+## 学习演示：空中画圆与轨迹分析
+
+完成全工作区构建后，在容器工作区运行：
+
+```bash
+source install/setup.bash
+ros2 launch franka_learning_demos circle.launch.py
+```
+
+此入口在独立 ROS 域中启动单臂 MuJoCo，自动画圆，并显示目标与实际轨迹，保存 CSV、
+误差指标及 PNG/SVG 图表。它仅支持仿真。无界面批处理加 `gui:=false keep_alive:=false`。
+操作步骤、结果解读和三个学习实验见[学习任务 1](franka_learning_demos/README.md)。
+
 ## 无界面运行与自动验证
 
 SSH 或不需要显示窗口时，在宿主机运行：
